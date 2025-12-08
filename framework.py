@@ -9,7 +9,7 @@ sns.set_palette("husl")
 plt.rcParams['figure.figsize'] = [12, 8]
 plt.rcParams['figure.dpi'] = 100
 
-df = pd.read_csv("/mnt/data/shopping_behavior_updated.csv")
+df = pd.read_csv("./mnt/data/shopping_behavior_updated.csv")
 
 # Filter for outerwear analysis
 outerwear_df = df[df['Category'] == 'Outerwear']
@@ -118,7 +118,7 @@ ax9.set_ylabel('Count')
 ax9.grid(True, alpha=0.3)
 
 plt.tight_layout()
-plt.savefig('/mnt/data/outerwear_overview_analysis.png', dpi=300, bbox_inches='tight')
+plt.savefig('./mnt/data/outerwear_overview_analysis.png', dpi=300, bbox_inches='tight')
 plt.show()
 
 ##############################################################################
@@ -207,7 +207,7 @@ ax24.set_xticklabels(seasons)
 ax24.legend()
 
 plt.tight_layout()
-plt.savefig('/mnt/data/seasonal_decomposition.png', dpi=300, bbox_inches='tight')
+plt.savefig('./mnt/data/seasonal_decomposition.png', dpi=300, bbox_inches='tight')
 plt.show()
 
 ##############################################################################
@@ -310,7 +310,7 @@ for bar, value in zip(bars, subscription_rates['Subscription Rate']):
              f'{value:.1f}%', ha='center', va='bottom', fontweight='bold')
 
 plt.tight_layout()
-plt.savefig('/mnt/data/hypothesis_testing.png', dpi=300, bbox_inches='tight')
+plt.savefig('./mnt/data/hypothesis_testing.png', dpi=300, bbox_inches='tight')
 plt.show()
 
 ##############################################################################
@@ -381,7 +381,7 @@ for bar, value in zip(bars2, value_gap_data['Customer Value']):
              f'${value:.2f}', ha='center', va='bottom', fontweight='bold')
 
 plt.tight_layout()
-plt.savefig('/mnt/data/performance_gap_analysis.png', dpi=300, bbox_inches='tight')
+plt.savefig('./mnt/data/performance_gap_analysis.png', dpi=300, bbox_inches='tight')
 plt.show()
 
 ##############################################################################
@@ -400,7 +400,7 @@ sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', center=0,
             square=True, linewidths=1, cbar_kws={"shrink": .8}, ax=ax5)
 ax5.set_title('Outerwear Feature Correlation Heatmap', fontsize=14, fontweight='bold')
 plt.tight_layout()
-plt.savefig('/mnt/data/correlation_heatmap.png', dpi=300, bbox_inches='tight')
+plt.savefig('./mnt/data/correlation_heatmap.png', dpi=300, bbox_inches='tight')
 plt.show()
 
 print("All visualizations have been created and saved to /mnt/data/")
