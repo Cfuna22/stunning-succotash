@@ -11,7 +11,31 @@ plt.rcParams['figure.dpi'] = 100
 
 df = pd.read_csv("./mnt/data/shopping_behavior_updated.csv")
 
-# Filter for outerwear analysis
+# ============================================================================
+# FIX: Create numeric columns BEFORE filtering
+# ============================================================================
+
+# 1. Convert 'Frequency of Purchases' to numeric (times per year)
+frequency_mapping = {
+    'Weekly': 52,
+    'Fortnightly': 26,
+    'Monthly': 12,
+    'Quarterly': 4,
+    'Bi-Weekly': 26,      # Same as fortnightly
+    'Every 3 Months': 4,  # Same as quarterly
+    'Annually': 1
+}
+
+# Create numeric versions for calculations
+df['Frequency_Numeric'] = df['Frequency of Purchases'].map(frequency_mapping)
+
+# 2. Convert 'Discount Applied' to numeric (1 for Yes, 0 for No)
+df['Discount_Numeric'] = (df['Discount Applied'] == 'Yes').astype(int)
+
+# 3. Create customer value using numeric frequency
+df['Customer_Value'] = df['Purchase Amount (USD)'] * df['Frequency_Numeric']
+
+# Now filter for outerwear analysis
 outerwear_df = df[df['Category'] == 'Outerwear']
 other_df = df[df['Category'] != 'Outerwear']
 
@@ -130,7 +154,7 @@ fig2, ((ax21, ax22), (ax23, ax24)) = plt.subplots(2, 2, figsize=(16, 12))
 # 2.1 Seasonal Purchase Amount
 seasonal_outerwear = outerwear_df.groupby('Season').agg({
     'Purchase Amount (USD)': 'sum',
-    'Discount Applied': 'mean',
+    'Discount_Numeric': 'mean',  # Use numeric version
     'Review Rating': 'mean',
     'Customer ID': 'count'
 }).rename(columns={'Customer ID': 'Transaction_Count'})
@@ -168,14 +192,14 @@ ax23_secondary = ax23.twinx()
 width = 0.35
 x = np.arange(len(seasons))
 
-bars1 = ax23.bar(x - width/2, seasonal_outerwear.loc[seasons, 'Discount Applied'], 
-                width, label='Avg Discount', color='#5D9CEC', alpha=0.7)
+bars1 = ax23.bar(x - width/2, seasonal_outerwear.loc[seasons, 'Discount_Numeric'], 
+                width, label='Discount Rate', color='#5D9CEC', alpha=0.7)
 bars2 = ax23_secondary.bar(x + width/2, seasonal_outerwear.loc[seasons, 'Review Rating'], 
                           width, label='Avg Rating', color='#FF6B6B', alpha=0.7)
 
 ax23.set_title('Discount & Rating by Season', fontsize=14, fontweight='bold')
 ax23.set_xlabel('Season')
-ax23.set_ylabel('Average Discount Applied')
+ax23.set_ylabel('Discount Rate (0-1)')
 ax23_secondary.set_ylabel('Average Review Rating')
 ax23.set_xticks(x)
 ax23.set_xticklabels(seasons)
@@ -217,27 +241,31 @@ plt.show()
 fig3, ((ax31, ax32), (ax33, ax34)) = plt.subplots(2, 2, figsize=(16, 12))
 
 # 3.1 Hypothesis 2.1: Discount Anchoring
-discount_anchor_test = outerwear_df.groupby('Discount Applied').agg({
-    'Frequency of Purchases': 'mean',
+# Group by numeric discount column
+discount_anchor_test = outerwear_df.groupby('Discount_Numeric').agg({
+    'Frequency_Numeric': 'mean',  # Use numeric frequency
     'Previous Purchases': 'mean',
     'Review Rating': 'mean'
 }).sort_index()
 
+# Rename index for clarity
+discount_anchor_test.index = ['No Discount', 'Discount Applied']
+
 x = np.arange(len(discount_anchor_test))
 width = 0.25
 
-bars1 = ax31.bar(x - width, discount_anchor_test['Frequency of Purchases'], 
-                width, label='Frequency', color='#5D9CEC', alpha=0.8)
+bars1 = ax31.bar(x - width, discount_anchor_test['Frequency_Numeric'], 
+                width, label='Frequency (per year)', color='#5D9CEC', alpha=0.8)
 bars2 = ax31.bar(x, discount_anchor_test['Previous Purchases'], 
                 width, label='Previous Purchases', color='#45B7D1', alpha=0.8)
 bars3 = ax31.bar(x + width, discount_anchor_test['Review Rating'], 
                 width, label='Rating', color='#96CEB4', alpha=0.8)
 
 ax31.set_title('Discount Anchoring Analysis', fontsize=14, fontweight='bold')
-ax31.set_xlabel('Discount Applied (%)')
+ax31.set_xlabel('Discount Status')
 ax31.set_ylabel('Metrics')
 ax31.set_xticks(x)
-ax31.set_xticklabels([f"{int(i*100)}%" for i in discount_anchor_test.index])
+ax31.set_xticklabels(discount_anchor_test.index)  # Use the renamed labels
 ax31.legend()
 ax31.grid(True, alpha=0.3, axis='y')
 
@@ -319,19 +347,19 @@ plt.show()
 
 fig4, (ax41, ax42) = plt.subplots(1, 2, figsize=(16, 6))
 
-# 4.1 Frequency Gap Analysis
+# 4.1 Frequency Gap Analysis - Use numeric frequency
 frequency_gap_data = pd.DataFrame({
     'Metric': ['Expected (Other Categories)', 'Actual (Outerwear)'],
     'Frequency': [
-        other_df['Frequency of Purchases'].mean(),
-        outerwear_df['Frequency of Purchases'].mean()
+        other_df['Frequency_Numeric'].mean(),
+        outerwear_df['Frequency_Numeric'].mean()
     ]
 })
 
 bars1 = ax41.bar(frequency_gap_data['Metric'], frequency_gap_data['Frequency'], 
                 color=['#4ECDC4', '#FF6B6B'], alpha=0.8)
 ax41.set_title('Purchase Frequency Gap Analysis', fontsize=14, fontweight='bold')
-ax41.set_ylabel('Average Frequency of Purchases')
+ax41.set_ylabel('Average Frequency (purchases/year)')
 ax41.set_ylim(0, max(frequency_gap_data['Frequency']) * 1.2)
 
 # Add gap arrow
@@ -350,7 +378,6 @@ for bar, value in zip(bars1, frequency_gap_data['Frequency']):
              f'{value:.2f}', ha='center', va='bottom', fontweight='bold')
 
 # 4.2 Customer Value Gap Analysis
-df['Customer_Value'] = df['Purchase Amount (USD)'] * df['Frequency of Purchases']
 expected_value = other_df['Customer_Value'].mean()
 actual_value = outerwear_df['Customer_Value'].mean()
 
@@ -388,15 +415,24 @@ plt.show()
 # 5. CORRELATION HEATMAP FOR OUTERWEAR
 ##############################################################################
 
-# Select numerical columns for correlation
-numerical_cols = ['Purchase Amount (USD)', 'Review Rating', 'Discount Applied', 
-                  'Previous Purchases', 'Frequency of Purchases', 'Age']
+# Use numeric columns for correlation
+numerical_cols = ['Purchase Amount (USD)', 'Review Rating', 'Discount_Numeric', 
+                  'Previous Purchases', 'Frequency_Numeric', 'Age']
 
 # Create correlation matrix
 corr_matrix = outerwear_df[numerical_cols].corr()
 
+# Rename columns for better readability in the heatmap
+corr_matrix_renamed = corr_matrix.rename(columns={
+    'Discount_Numeric': 'Discount Applied',
+    'Frequency_Numeric': 'Frequency of Purchases'
+}, index={
+    'Discount_Numeric': 'Discount Applied',
+    'Frequency_Numeric': 'Frequency of Purchases'
+})
+
 fig5, ax5 = plt.subplots(figsize=(10, 8))
-sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', center=0, 
+sns.heatmap(corr_matrix_renamed, annot=True, cmap='coolwarm', center=0, 
             square=True, linewidths=1, cbar_kws={"shrink": .8}, ax=ax5)
 ax5.set_title('Outerwear Feature Correlation Heatmap', fontsize=14, fontweight='bold')
 plt.tight_layout()
