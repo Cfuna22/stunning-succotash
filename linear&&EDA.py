@@ -27,14 +27,31 @@ print('OUR DATA FOR VISUALIZATION')
 print(df)
 print()
 
-plt.figure(figsize=(8, 6))
+plt.figure(figsize=(10, 6))
 
-plt.scatter(df['Size'], df['Price'], s=100, color='blue')
+plt.scatter(df['Size'], df['Price'],
+            s=200,
+            color='red',
+            edgecolors='black',
+            linewidths=2,
+            alpha=0.8)
 
-plt.xlabel('House Size (square feet)')
-plt.ylabel('House Price ($)')
-plt.title('House Size vs Price Relationship')
+for i in range(len(df)):
+    df.loc[i, 'Size'],
+    df.loc[i, 'Price'] + 10000,
+    df.loc[i, 'House'],
+    ha='center',
+    va='bottom',
+    fontsize=12,
+    fontweight='bold'
 
-plt.grid(True, alpha=0.3)
+plt.xlabel('House Size (square feet)', fontsize=14)
+plt.ylabel('House Price ($)', fontsize=14)
+plt.title('House Size vs Price Relationship', fontsize=16, fontweight='bold')
 
+plt.grid(True, linestyle='--', alpha=0.3)
+
+plt.gca().set_facecolor('#f5f5f5')
+
+plt.tight_layout()
 plt.show()
