@@ -2,6 +2,9 @@ import pandas as pd
 import psycopg2
 from sqlalchemy import create_engine
 import os
+import requests
+import json
+from datetime import datetime
 
 def load_inventory_from_excel():
     """Load inventory data from Abel's excel file"""
@@ -44,3 +47,10 @@ def load_inventory_from_excel():
 
 
 # Scenario 3: Extract from API (Web Analytics)
+
+def Load_web_analytics_from_api():
+    """Load web analytics from Google Analytics API"""
+
+    # API Configuration
+    API_KEY = 'https://myapi.com'
+    PROPERTY_ID = 'GA4_PROPERTY_ID'
