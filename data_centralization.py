@@ -39,4 +39,8 @@ def load_inventory_from_excel():
 
     print(f"Loaded {len(df_clean)} inventory records")
 
-    
+
+
+
+
+# Scenario 3: Extract from API (Web Analytics)
