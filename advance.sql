@@ -166,3 +166,156 @@ CREATE INDEX idx_fact_sales_product ON fact_sales(product_id);
 -- PART 3: COMPLEX SQL - Building the ETL Pipeline
 -- Procedure 1: Populate Date Dimension (Smart Way)
 -- sql
+
+-- This is a REAL-WORLD procedure companies use!
+CREATE OR REPLACE PROCEDURE populate_dim_date(
+    start_date DATE DEFAULT '2020-01-01',
+    end_date DATE DEFAULT '2030-12-31'
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    current_date DATE := start_date;
+    holiday_date DATE[] := ARRAY[
+        '2024-01-01', '2024-12-25',
+        '2024-07-04', '2024-11-28'
+    ];
+BEGIN
+    RAISE NOTICE 'Populating dim_date from % to %',
+    start_date, end_date;
+
+    WHILE current_date <= end_date LOOP
+        INSERT INTO dim_date (
+            date_id, year, quarter, month, month_name,
+            day_of_month, day_of_week, day_name,
+            is_weekend, is_holiday, fiscal_year, fiscal_quarter
+        )
+        VALUES (
+            current_date,
+            EXTRACT(YEAR FROM current_date),
+            EXTRACT(QUARTER FROM current_date),
+            EXTRACT(MONTH FROM current_date),
+            TO_CHAR(current_date, 'Month'),
+            EXTRACT(DAY FROM current_date),
+            EXTRACT(ISODOW FROM current_date),  -- Monday=1, Sunday=7
+            TO_CHAR(current_date, 'Day'),
+            EXTRACT(ISODOW FROM current_date) IN (6, 7),  -- Sat/Sun
+            current_date = ANY(holiday_date),
+
+
+            -- Fiscal year starting April 1
+            CASE
+                WHEN EXTRACT(MONTH FROM current_date) >= 4
+                THEN EXTRACT(YEAR FROM current_date)
+                ELSE EXTRACT(YEAR FROM current_date) -1
+            END,
+            -- Fiscal quarters: Apr-Jun=Q1, Jul-Sep=Q2, Oct-Dec=Q3, Jan-Mar=Q4
+            CASE
+                WHEN EXTRACT(MONTH FROM current_date) BETWEEN 4 AND 6 THEN 1
+                WHEN EXTRACT(MONTH FROM current_date) BETWEEN 7 AND 9 THEN 2
+                WHEN EXTRACT(MONTH FROM current_date) BETWEEN 10 AND 12 THEN 3
+                ELSE 4
+                END
+        )
+        ON CONFLICT (date_id) DO NOTHING;
+
+        current_date := current_date + INTERVAL '1 day';
+    END LOOP;
+
+    RAISE NOTICE 'Date dimension populated successfully!';
+    RAISE NOTICE 'Total dates inserted: %', (end_date - start_date + 1);
+END;
+$$;
+
+-- Execute it!
+CALL populate_dim_date('2024-01-01', '2024-12-31');
+
+-- Procedure 2: Load Products Dimension (With Data Quality Checks)
+
+CREATE OR REPLACE PROCEDURE load_dim_products()
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    new_records_count INT := 0;
+    updated_records INT := 0;
+    invalid_records INT := 0;
+BEGIN
+    RAISE NOTICE 'Starting dim_products load...'
+
+    -- Step 1: Validate source data
+    SELECT COUNT(*) INTO invalid_records
+    FROM source_products_excel
+    WHERE prod_code IS NULL OR prod_name is NULL OR cost IS NULL;
+
+    IF invalid_records > 0 THEN
+        RAISE WARNING 'Found % invalid records (NULL critical fields)', invalid_records;
+        END IF;
+
+    -- Step 2: Insert new products
+    WITH valid_products AS (
+        SELECT DISTINCT
+            prod_code,
+            prod_name,
+            cat,
+            subcat,
+            cost,
+            supplier
+        FROM source_products_excel
+        WHERE prod_code IS NOT NULL
+            AND prod_name IS NOT NULL
+            AND cost IS NOT NULL
+    )
+    SELECT
+        vp.prod_code,
+        vp.prod_name,
+        vp.cat,
+        vp.subcat,
+        vp.cost,
+        vp.supplier,
+        -- Calculate retail price: cost + 30% margin
+        ROUND(vp.cost * 1.3, 2)
+    FROM valid_products vp
+    WHERE NOT EXISTS (
+        SELECT 1 FROM dim_products dp
+        WHERE dp.product_code = vp.prod_code
+    )
+    RETURNING product_id INTO new_records_count;
+
+    -- Step 3: Update existing products
+    WITH updates AS (
+        SELECT
+            vp.prod_code,
+            vp.prod_name,
+            vp.cat,
+            vp.subcat,
+            vp.cost,
+            vp.supplier,
+            ROUND(vp.cost * 1.3, 2) AS new_retail
+            FROM valid_products vp
+    )
+    UPDATE dim_products dp
+    SET
+        product_name = u.prod_name,
+        category = u.cat,
+        subcategory = u.subcat,
+        cost_price = u.cost,
+        supplier = u.supplier,
+        retail_price = u.new_retail,
+        updated_at = CURRENT_TIMESTAMP
+    FROM updates u
+    WHERE dp.product_code = u.prod_code
+        AND (
+            dp.prod_name != u.prod_name OR
+            dp.category != u.cat OR
+            dp.cost_price != u.cost
+        )
+    RETURNING db.product_id INTO updated_records_count;
+
+    RAISE NOTICE 'Products load completed!';
+    RAISE NOTICE 'New records: %, Updated records: %',
+        COALESCE(new_records_count, 0),
+        COALESCE(updated_records_count, 0);
+
+END;
+$$;
+CALL load_dim_products();
