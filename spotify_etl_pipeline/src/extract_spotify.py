@@ -17,4 +17,10 @@ class SpotifyExtractor:
 
         def get_user_profile(self):
             """Get current user's profile info"""
-            logger
+            logger.info('Fetching user profile...')
+            try:
+                user = self.sp.current_user()
+                profile_data = {
+                    'user_id': user['id'],
+                    'display_name': user['']
+                }
