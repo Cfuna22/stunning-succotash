@@ -1,5 +1,5 @@
 import logging
-from src.auth_spotify import *
+from .auth_spotify import get_spotify_client
 import pandas as pd
 
 # Setup logging

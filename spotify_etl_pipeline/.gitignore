@@ -12,3 +12,8 @@ data/
 logs/
 .DS_Store
 .ipynb_checkpoints
+venv/
+myvenv/
+env/
+*.pyc
+__pycache__/
