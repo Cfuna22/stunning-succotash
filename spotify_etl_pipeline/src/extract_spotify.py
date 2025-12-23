@@ -15,24 +15,25 @@ class SpotifyExtractor:
         if not self.sp:
             raise ConnectionError('Failed to connect to Spotify API')
 
-        def get_user_profile(self):
-            """Get current user's profile info"""
-            logger.info('Fetching user profile...')
-            try:
-                user = self.sp.current_user()
-                profile_data = {
-                    'user_id': user['id'],
-                    'display_name': user['display_name'],
-                    'email': user.get('email', ''),
-                    'country': user.get('country', ''),
-                    'followers': user['followers']['total'] if 'followers' in user else 0,
-                    'account_type': user.get('product', 'free'),
-                }
-                logger.info(f'Retrieved profile for: {profile_data['display_name']}')
-                return profile_data
-            except Exception as e:
-                logger.error(f'Failed to get user profile: {e}')
-                return None
+    # ===== FIXED: This method is NOW a proper class method =====
+    def get_user_profile(self):
+        """Get current user's profile info"""
+        logger.info('Fetching user profile...')
+        try:
+            user = self.sp.current_user()
+            profile_data = {
+                'user_id': user['id'],
+                'display_name': user['display_name'],
+                'email': user.get('email', ''),
+                'country': user.get('country', ''),
+                'followers': user['followers']['total'] if 'followers' in user else 0,
+                'account_type': user.get('product', 'free'),
+            }
+            logger.info(f'Retrieved profile for: {profile_data["display_name"]}')
+            return profile_data
+        except Exception as e:
+            logger.error(f'Failed to get user profile: {e}')
+            return None
 
     def get_top_tracks(self, time_range='short_term', limit=20):
         """
@@ -85,7 +86,8 @@ class SpotifyExtractor:
                 track = item['track']
                 played_at = item['played_at']
 
-                played_ifo = {
+                # ===== FIXED: Changed 'played_ifo' to 'played_info' =====
+                played_info = {
                     'played_at': played_at,
                     'track_id': track['id'],
                     'track_name': track['name'],

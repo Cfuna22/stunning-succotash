@@ -16,8 +16,9 @@ def get_spotify_client():
         scope = [
             'user-read-private',
             'user-read-email',
+            'user-read-recently-played',
             'user-top-read', # Read user's top tracks/artists
-            'user-read-private', # Read private playlists
+            'playlist-read-private', # Read private playlists
             'user-library-read' #Read saved tracks
         ]
 
@@ -25,9 +26,10 @@ def get_spotify_client():
         sp_oauth = SpotifyOAuth(
             client_id=SpotifyConfig.CLIENT_ID,
             client_secret=SpotifyConfig.CLIENT_SECRET,
-            redirect_uri=SpotifyConfig.REDIRECT_URL,
+            redirect_uri=SpotifyConfig.REDIRECT_URI,
             scope=' '.join(scope),
-            cache_path='.spotify_cache' #Save token for reuse
+            cache_path='.spotify_cache',
+            open_browser=True
         )
 
         # Get access token (opens browser if needed)
@@ -38,13 +40,13 @@ def get_spotify_client():
             return None
 
             # Create Spotify client
-            sp = spotipy.Spotify(auth=token_info['access_token'])
+        sp = spotipy.Spotify(auth=token_info['access_token'])
 
             # Test the connection
-            user = sp.current_user()
-            logger.info(f' Successfully connected to Spotify as: {user['display_name']}')
+        user = sp.current_user()
+        logger.info(f' Successfully connected to Spotify as: {user['display_name']}')
 
-            return sp
+        return sp
 
     except Exception as e:
         logger.error(f' authentication failed: {e}')

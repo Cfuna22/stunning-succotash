@@ -8,7 +8,7 @@ class SpotifyConfig:
     # Get credentials from environment variables
     CLIENT_ID = os.getenv('SPOTIFY_CLIENT_ID')
     CLIENT_SECRET = os.getenv('SPOTIFY_CLIENT_SECRET')
-    REDIRECT_URL = os.getenv('SPOTIFY_REDIRECT_URI')
+    REDIRECT_URI = os.getenv('SPOTIFY_REDIRECT_URI')
 
     # API endpoints
     AUTH_URL = 'https://accounts.spotify.com/authorize'
