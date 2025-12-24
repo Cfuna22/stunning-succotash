@@ -5,7 +5,7 @@ load_dotenv()
 
 class DatabaseConfig:
     DB_HOST = os.getenv('DB_HOST', 'localhost')
-    DB_PORT = os.getenv('DB_PORT', '5432')
+    DB_PORT = os.getenv('DB_PORT', '5433')
     DB_NAME =('DB_NAME', 'spotify_data')
     DB_USER = ('DB_USER', 'postgres')
     DB_PASSWORD=('DB_PASSWORD', 'postgres')

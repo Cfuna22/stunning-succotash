@@ -7,4 +7,4 @@ matplotlib>=3.9.0
 plotly>=5.22.0
 numpy>=1.26.4
 requests>=2.32.0
-
+schedule==1.2.0
