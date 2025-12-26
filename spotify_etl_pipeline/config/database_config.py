@@ -4,11 +4,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class DatabaseConfig:
-    DB_HOST = os.getenv('DB_HOST', 'localhost')
-    DB_PORT = os.getenv('DB_PORT', '5433')
-    DB_NAME =('DB_NAME', 'spotify_data')
-    DB_USER = ('DB_USER', 'postgres')
-    DB_PASSWORD=('DB_PASSWORD', 'postgres')
+    DB_HOST = 'localhost'
+    DB_PORT = '5433'
+    DB_NAME = 'spotify_data'
+    DB_USER = 'postgres'
+    DB_PASSWORD = 'postgres'
 
     @classmethod
     def get_connection_string(cls):
